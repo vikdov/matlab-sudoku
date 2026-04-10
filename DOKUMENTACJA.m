@@ -8,7 +8,7 @@ This project implements a Sudoku solver using backtracking in MATLAB, providing 
 - `sudoku_gui.m`: Graphical user interface for user interaction.
 - `sudoku_generator.m`: Generates random Sudoku puzzles.
 - `sudoku_validator.m`: Validates a completed Sudoku solution.
-- `sudoku_helpers.m`: Helper functions for board validation.
+- `validate_entire_board.m`: Validates incomplete Sudoku puzzles, detecting conflicts in rows, columns, and 3×3 boxes while allowing zeros for empty cells.
 - `sudoku_display.m`: Functions for displaying the board.
 - `test_sudoku_suite.m`: Unit tests for verifying algorithm correctness.
 
