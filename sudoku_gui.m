@@ -135,7 +135,7 @@ function sudoku_gui()
         % Validate the initial board state before solving
         if ~validate_entire_board(d.puzzle)
             set(d.statusText, 'String', ...
-                'Invalid puzzle: conflicts detected. Please fix the highlighted errors.');
+                'Invalid puzzle: conflicts detected in the initial board. Please correct duplicates in rows, columns, or boxes.');
             return;
         end
 

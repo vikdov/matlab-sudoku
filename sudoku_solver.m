@@ -1,6 +1,6 @@
 function solution = sudoku_solver(board)
     % This function solves a Sudoku puzzle using backtracking
-    working_board = board;  % Work with a copy to avoid modifying the input
+    working_board = board;  % Work with a local copy (MATLAB uses copy-on-write semantics)
     if is_solved(working_board)
         solution = working_board;
         return;
