@@ -6,8 +6,8 @@ function puzzle = sudoku_generator()
     % Fill the board using backtracking with random number ordering
     board = fill_board(board);
 
-    % Remove cells to create a puzzle (leave 30-40 clues)
-    puzzle = remove_cells(board, 45);
+    % Remove cells to create a puzzle (leave ~41 clues for a well-defined puzzle)
+    puzzle = remove_cells(board, 40);
 end
 
 function board = fill_board(board)

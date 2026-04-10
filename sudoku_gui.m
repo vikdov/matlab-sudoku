@@ -131,6 +131,14 @@ function sudoku_gui()
 
     function solveCallback(~, ~)
         d = guidata(hFig);
+
+        % Validate the initial board state before solving
+        if ~validate_entire_board(d.puzzle)
+            set(d.statusText, 'String', ...
+                'Invalid puzzle: conflicts detected in the initial board. Please correct duplicates in rows, columns, or boxes.');
+            return;
+        end
+
         set(d.statusText, 'String', 'Solving puzzle, please wait...');
         drawnow;
 

@@ -1,22 +1,23 @@
 function solution = sudoku_solver(board)
     % This function solves a Sudoku puzzle using backtracking
-    if is_solved(board)
-        solution = board;
+    working_board = board;  % Work with a local copy (MATLAB uses copy-on-write semantics)
+    if is_solved(working_board)
+        solution = working_board;
         return;
     end
-    [row, col] = find_empty(board);
+    [row, col] = find_empty(working_board);
     if row == -1  % No empty spaces
-        solution = board;
+        solution = working_board;
         return;
     end
     for num = 1:9  % Try numbers from 1 to 9
-        if is_valid(board, row, col, num)
-            board(row, col) = num;  % Place the number
-            solution = sudoku_solver(board);  % Recursion
+        if is_valid(working_board, row, col, num)
+            working_board(row, col) = num;  % Place the number
+            solution = sudoku_solver(working_board);  % Recursion
             if ~isempty(solution)  % Check if we found a solution
                 return;
             end
-            board(row, col) = 0;  % Reset on backtrack
+            working_board(row, col) = 0;  % Reset on backtrack
         end
     end
     solution = [];

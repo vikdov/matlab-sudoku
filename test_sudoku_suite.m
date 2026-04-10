@@ -57,9 +57,3 @@ function test_sudoku_solver()
 
     disp('All tests completed successfully.');
 end
-
-function result = sudoku_solver(sudoku)
-    % Placeholder for the Sudoku solver function
-    % This should be replaced with the actual implementation
-    result = sudoku; % Simply returns input for placeholder
-end
