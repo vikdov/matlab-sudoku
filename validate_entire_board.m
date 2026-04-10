@@ -1,4 +1,4 @@
-% sudoku_helpers.m
+% validate_entire_board.m
 
 function isValid = validate_entire_board(board)
     % Validates a Sudoku board (partial or complete) for conflicts.
