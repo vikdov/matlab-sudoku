@@ -24,12 +24,12 @@ customPuzzle = [
     0 0 0 4 1 9 0 0 5;
     0 0 0 0 8 0 0 7 9;
 ];
-solution = solveSudoku(customPuzzle);
+solution = sudoku_solver(customPuzzle);
 disp(solution);
 
 %% Validating Solutions
 % To validate a Sudoku solution, use the following command:
-isValid = validateSolution(solution);
+isValid = sudoku_validator(solution);
 if isValid
     disp('The solution is valid.');
 else
@@ -38,9 +38,9 @@ end
 
 %% Generating Random Puzzles
 % To generate a random Sudoku puzzle, use the generatePuzzle function:
-randomPuzzle = generatePuzzle();
+randomPuzzle = sudoku_generator();
 disp(randomPuzzle);
 
 %% Running Tests
 % To run the unit tests for the Sudoku Solver, use the following command:
-runTests();
+test_sudoku_solver();

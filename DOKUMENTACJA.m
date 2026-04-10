@@ -1,36 +1,38 @@
 # DOKUMENTACJA
 
 ## Project Overview
-This project implements a Sudoku solver using various algorithms in MATLAB, providing an efficient solution to the popular puzzle game.
+This project implements a Sudoku solver using backtracking in MATLAB, providing an efficient solution to the popular puzzle game.
 
 ## File Structure
-- `solver.m`: Contains the main algorithm for solving Sudoku.
-- `gui.m`: Graphical user interface for user interaction.
-- `data/`: Directory containing example Sudoku puzzles.
-- `tests/`: Unit tests for verifying algorithm correctness.
+- `sudoku_solver.m`: Contains the main algorithm for solving Sudoku.
+- `sudoku_gui.m`: Graphical user interface for user interaction.
+- `sudoku_generator.m`: Generates random Sudoku puzzles.
+- `sudoku_validator.m`: Validates a completed Sudoku solution.
+- `sudoku_helpers.m`: Helper functions for board validation.
+- `sudoku_display.m`: Functions for displaying the board.
+- `test_sudoku_suite.m`: Unit tests for verifying algorithm correctness.
 
 ## Algorithms
-1. **Backtracking Algorithm**: A recursive solution that explores potential placements for numbers in empty cells.
-2. **Constraint Propagation**: Reduces possibilities based on current board state before solving.
+1. **Backtracking Algorithm**: A recursive solution that explores potential placements for numbers in empty cells, backtracking when no valid placement exists.
 
 ## Usage Instructions
 1. Clone the repository: `git clone https://github.com/vikdov/matlab-sudoku.git`
 2. Navigate to the directory: `cd matlab-sudoku`
-3. Run the solver: `solver()`
-4. Optional: Launch the GUI: `gui()`
+3. Run the solver: `sudoku_solver(board)`
+4. Optional: Launch the GUI: `sudoku_gui()`
 
 ## Examples
 ### Example 1
 To solve a given Sudoku puzzle, input the initial state:
 ```matlab
 initial_state = [5 3 0 0 7 0 0 0 0; ... ];
-solution = solver(initial_state);
+solution = sudoku_solver(initial_state);
 ```
 
 ### Example 2
 To use the graphical interface:
 ```matlab
-gui();
+sudoku_gui();
 ```
 
 ## MATLAB Syntax Explanation

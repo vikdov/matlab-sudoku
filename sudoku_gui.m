@@ -156,6 +156,11 @@ function sudoku_gui()
                             'String', num2str(solution(r, c)), ...
                             'ForegroundColor', [0.10 0.30 0.80], ...
                             'Enable', 'inactive');
+                    else
+                        % Explicitly mark given (pre-filled) cells to
+                        % distinguish them from solver-filled cells
+                        set(d.editHandles(r, c), ...
+                            'ForegroundColor', [0 0 0]);
                     end
                 end
             end

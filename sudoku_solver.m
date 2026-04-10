@@ -39,22 +39,30 @@ end
 
 function valid = is_valid(board, row, col, num)
     % This function checks if a number can be placed at a given position
+    % The current cell (row, col) is excluded from all checks
     valid = true;
-    % Check row
-    if any(board(row, :) == num)
+    % Check row (excluding current cell)
+    rowVals = board(row, :);
+    rowVals(col) = 0;
+    if any(rowVals == num)
         valid = false;
         return;
     end
-    % Check column
-    if any(board(:, col) == num)
+    % Check column (excluding current cell)
+    colVals = board(:, col);
+    colVals(row) = 0;
+    if any(colVals == num)
         valid = false;
         return;
     end
-    % Check 3x3 grid
+    % Check 3x3 grid (excluding current cell)
     startRow = floor((row - 1) / 3) * 3 + 1;
     startCol = floor((col - 1) / 3) * 3 + 1;
     for r = startRow:startRow+2
         for c = startCol:startCol+2
+            if r == row && c == col
+                continue;
+            end
             if board(r, c) == num
                 valid = false;
                 return;
