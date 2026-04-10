@@ -1,26 +1,65 @@
-function safe = is_safe(board, row, col, num)
-    % Check if 'num' is not present in current row
+function puzzle = sudoku_generator()
+    % Generate a random Sudoku puzzle by creating a solved board and removing cells
+    % Start with an empty board
+    board = zeros(9, 9);
+
+    % Fill the board using backtracking with random number ordering
+    board = fill_board(board);
+
+    % Remove cells to create a puzzle (leave 30-40 clues)
+    puzzle = remove_cells(board, 45);
+end
+
+function board = fill_board(board)
+    % Fill the board recursively using backtracking with random order
+    for row = 1:9
+        for col = 1:9
+            if board(row, col) == 0
+                nums = randperm(9);
+                for k = 1:9
+                    num = nums(k);
+                    if is_safe_gen(board, row, col, num)
+                        board(row, col) = num;
+                        board = fill_board(board);
+                        if all(board(:) ~= 0)
+                            return;
+                        end
+                        board(row, col) = 0;
+                    end
+                end
+                return;
+            end
+        end
+    end
+end
+
+function puzzle = remove_cells(board, num_to_remove)
+    % Remove 'num_to_remove' cells from a solved board to create a puzzle
+    puzzle = board;
+    positions = randperm(81, num_to_remove);
+    for k = 1:length(positions)
+        idx = positions(k);
+        row = ceil(idx / 9);
+        col = mod(idx - 1, 9) + 1;
+        puzzle(row, col) = 0;
+    end
+end
+
+function safe = is_safe_gen(board, row, col, num)
+    % Check if num can be placed at (row, col)
     if any(board(row, :) == num)
         safe = false;
         return;
     end
-
-    % Check if 'num' is not present in current column
     if any(board(:, col) == num)
         safe = false;
         return;
     end
-
-    % Calculate the starting point of the 3x3 box
     box_start_row = floor((row - 1) / 3) * 3 + 1;
     box_start_col = floor((col - 1) / 3) * 3 + 1;
-
-    % Check if 'num' is not present in the corresponding 3x3 box
     if any(any(board(box_start_row:box_start_row+2, box_start_col:box_start_col+2) == num))
         safe = false;
         return;
     end
-
-    % If all checks passed, it's safe to place 'num'
     safe = true;
 end
