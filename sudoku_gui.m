@@ -6,9 +6,9 @@ function sudoku_gui()
     gridCols = 9;
     gridRows = 9;
     gridX = 20;
-    gridY = 140;
+    gridY = 200;
     figW = gridX * 2 + gridCols * cellW;   % 560
-    figH = gridY + gridRows * cellH + 10;  % 600
+    figH = gridY + gridRows * cellH + 10;  % 660
 
     hFig = figure( ...
         'Position', [100, 100, figW, figH], ...
@@ -19,9 +19,10 @@ function sudoku_gui()
         'Color', [0.94 0.94 0.94]);
 
     % --- Initialize shared data ---
-    data.puzzle   = zeros(9, 9);
-    data.isFixed  = false(9, 9);
+    data.puzzle      = zeros(9, 9);
+    data.isFixed     = false(9, 9);
     data.editHandles = gobjects(9, 9);
+    data.mistakes    = 0;
 
     % Alternating background colors for 3x3 boxes
     boxColors = {[0.88 0.92 1.00], [0.76 0.82 0.94]};
@@ -54,7 +55,7 @@ function sudoku_gui()
     data.statusText = uicontrol( ...
         'Style', 'text', ...
         'Parent', hFig, ...
-        'Position', [gridX, 105, figW - gridX*2, 28], ...
+        'Position', [gridX, 165, figW - gridX*2, 28], ...
         'String', 'Enter numbers (1-9) then press SOLVE, or use a preset.', ...
         'FontSize', 10, ...
         'HorizontalAlignment', 'left', ...
@@ -64,15 +65,27 @@ function sudoku_gui()
     data.countText = uicontrol( ...
         'Style', 'text', ...
         'Parent', hFig, ...
-        'Position', [gridX, 78, figW - gridX*2, 22], ...
+        'Position', [gridX, 142, figW - gridX*2, 20], ...
         'String', 'Filled: 0/81  |  Empty: 81/81', ...
         'FontSize', 9, ...
         'HorizontalAlignment', 'left', ...
         'BackgroundColor', [0.94 0.94 0.94]);
 
+    % --- Mistakes display ---
+    data.mistakesText = uicontrol( ...
+        'Style', 'text', ...
+        'Parent', hFig, ...
+        'Position', [gridX, 119, figW - gridX*2, 20], ...
+        'String', 'Mistakes: 0/3', ...
+        'FontSize', 9, ...
+        'FontWeight', 'bold', ...
+        'HorizontalAlignment', 'left', ...
+        'BackgroundColor', [0.94 0.94 0.94], ...
+        'ForegroundColor', [0.2 0.2 0.2]);
+
     % --- Buttons ---
     btnY  = 15;
-    btnH  = 55;
+    btnH  = 48;
     btnW  = 115;
     gap   = (figW - gridX*2 - 4*btnW) / 3;
 
@@ -103,6 +116,15 @@ function sudoku_gui()
         'FontSize', 11, 'FontWeight', 'bold', ...
         'BackgroundColor', [0.55 0.35 0.78], 'ForegroundColor', 'white', ...
         'Callback', @generateCallback);
+
+    % --- CHECK SESSION button (spans full width, above info row) ---
+    checkBtnY = btnY + btnH + 5;
+    uicontrol('Style', 'pushbutton', 'Parent', hFig, ...
+        'String', 'CHECK SESSION', ...
+        'Position', [gridX, checkBtnY, figW - gridX*2, 40], ...
+        'FontSize', 12, 'FontWeight', 'bold', ...
+        'BackgroundColor', [0.85 0.55 0.10], 'ForegroundColor', 'white', ...
+        'Callback', @checkSessionCallback);
 
     % Save initial data
     guidata(hFig, data);
@@ -181,8 +203,9 @@ function sudoku_gui()
 
     function clearCallback(~, ~)
         d = guidata(hFig);
-        d.puzzle  = zeros(9, 9);
-        d.isFixed = false(9, 9);
+        d.puzzle    = zeros(9, 9);
+        d.isFixed   = false(9, 9);
+        d.mistakes  = 0;
         boxColors = {[0.88 0.92 1.00], [0.76 0.82 0.94]};
         for r = 1:9
             for c = 1:9
@@ -197,13 +220,15 @@ function sudoku_gui()
             end
         end
         set(d.statusText, 'String', ...
-            'Board cleared. Enter a new puzzle or use LOAD EXAMPLE / GENERATE.');
+            'Board cleared. Enter a new puzzle or use LOAD EXAMPLE / GENERATE.', ...
+            'ForegroundColor', [0 0 0]);
         guidata(hFig, d);
         updateStats();
     end
 
     function loadExampleCallback(~, ~)
         d = guidata(hFig);
+        d.mistakes = 0;
         example = [ ...
             5, 3, 0, 0, 7, 0, 0, 0, 0; ...
             6, 0, 0, 1, 9, 5, 0, 0, 0; ...
@@ -218,23 +243,92 @@ function sudoku_gui()
         d.isFixed = (example ~= 0);
         loadPuzzleIntoGrid(d, [0 0 0]);
         set(d.statusText, 'String', ...
-            'Example puzzle loaded. Press SOLVE to find the solution.');
+            'Example puzzle loaded. Press SOLVE to find the solution.', ...
+            'ForegroundColor', [0 0 0]);
         guidata(hFig, d);
         updateStats();
     end
 
     function generateCallback(~, ~)
         d = guidata(hFig);
-        set(d.statusText, 'String', 'Generating random puzzle...');
+        d.mistakes = 0;
+        set(d.statusText, 'String', 'Generating random puzzle...', ...
+            'ForegroundColor', [0 0 0]);
         drawnow;
         puzzle    = sudoku_generator();
         d.puzzle  = puzzle;
         d.isFixed = (puzzle ~= 0);
         loadPuzzleIntoGrid(d, [0 0 0]);
         set(d.statusText, 'String', ...
-            'Random puzzle generated. Press SOLVE to find the solution.');
+            'Random puzzle generated. Press SOLVE to find the solution.', ...
+            'ForegroundColor', [0 0 0]);
         guidata(hFig, d);
         updateStats();
+    end
+
+    function checkSessionCallback(~, ~)
+        d = guidata(hFig);
+
+        % Guard: do nothing if game is already over
+        if d.mistakes >= 3
+            set(d.statusText, 'String', ...
+                'GAME OVER - Out of attempts! Press CLEAR or GENERATE to restart.', ...
+                'ForegroundColor', [0.8 0.0 0.0]);
+            return;
+        end
+
+        [isValid, errorMsg] = check_session(d.puzzle);
+        isFull = all(d.puzzle(:) ~= 0);
+
+        if isValid && isFull
+            % Puzzle complete and correct
+            set(d.statusText, 'String', ...
+                sprintf('Congratulations! Puzzle completed with %d mistake(s)!', d.mistakes), ...
+                'ForegroundColor', [0.0 0.5 0.0]);
+            msgbox(sprintf( ...
+                ['Congratulations! You solved the Sudoku puzzle!\n\n' ...
+                 'Mistakes made: %d/3\n\n' ...
+                 'Press CLEAR or GENERATE to play again!'], d.mistakes), ...
+                'Puzzle Complete!', 'help');
+        elseif isValid
+            % Partial board with no conflicts
+            set(d.statusText, 'String', ...
+                sprintf('Board is valid so far! (%d mistake(s) used)', d.mistakes), ...
+                'ForegroundColor', [0.0 0.5 0.0]);
+        else
+            % Conflict detected — record a mistake
+            d.mistakes = d.mistakes + 1;
+            guidata(hFig, d);
+            updateStats();
+
+            if d.mistakes >= 3
+                % Game over
+                set(d.statusText, 'String', ...
+                    'GAME OVER - Out of attempts! Press CLEAR or GENERATE to restart.', ...
+                    'ForegroundColor', [0.8 0.0 0.0]);
+                for r = 1:9
+                    for c = 1:9
+                        if ~d.isFixed(r, c)
+                            set(d.editHandles(r, c), ...
+                                'Enable', 'inactive', ...
+                                'BackgroundColor', [1.0 0.75 0.75]);
+                        end
+                    end
+                end
+                msgbox(sprintf( ...
+                    ['GAME OVER!\n\nYou have used all 3 attempts.\n\n' ...
+                     '%s\n\n' ...
+                     'Press CLEAR or GENERATE to start a new game.'], errorMsg), ...
+                    'Game Over', 'error');
+            else
+                % Warn: mistake recorded, attempts remaining
+                remaining = 3 - d.mistakes;
+                set(d.statusText, 'String', ...
+                    sprintf('Invalid board! Mistake %d/3 - %d attempt(s) left. %s', ...
+                        d.mistakes, remaining, errorMsg), ...
+                    'ForegroundColor', [0.75 0.35 0.00]);
+            end
+        end
     end
 
     % =========================================================
@@ -271,6 +365,18 @@ function sudoku_gui()
         empty  = 81 - filled;
         set(d.countText, 'String', ...
             sprintf('Filled: %d/81  |  Empty: %d/81', filled, empty));
+
+        % Update mistakes display with color coding
+        mistakes = d.mistakes;
+        if mistakes == 0
+            mistakeColor = [0.2 0.2 0.2];
+        elseif mistakes < 3
+            mistakeColor = [0.80 0.45 0.00];
+        else
+            mistakeColor = [0.80 0.00 0.00];
+        end
+        set(d.mistakesText, 'String', sprintf('Mistakes: %d/3', mistakes), ...
+            'ForegroundColor', mistakeColor);
     end
 
 end
