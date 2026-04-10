@@ -1,56 +1,263 @@
-function sudoku_gui
-    % Create a MATLAB GUI for an interactive Sudoku solver
-    hFig = figure('Position', [100, 100, 400, 400], 'MenuBar', 'none', 'Name', 'Sudoku Solver', 'NumberTitle', 'off', 'Resize', 'off');
+function sudoku_gui()
+    % Create a fully functional MATLAB GUI for an interactive Sudoku solver
 
-    % Create a grid for Sudoku board
-    boardAxes = axes('Parent', hFig, 'Position', [0.1, 0.2, 0.8, 0.7]);
-    hold(boardAxes, 'on');
-    gridSize = 9;
-    cellSize = 40;
+    cellW = 50;
+    cellH = 50;
+    gridCols = 9;
+    gridRows = 9;
+    gridX = 20;
+    gridY = 140;
+    figW = gridX * 2 + gridCols * cellW;   % 560
+    figH = gridY + gridRows * cellH + 10;  % 600
 
-    % Draw the board
-    for i = 0:gridSize
-        plot([0, gridSize*cellSize], [i*cellSize, i*cellSize], 'k'); % horizontal lines
-        plot([i*cellSize, i*cellSize], [0, gridSize*cellSize], 'k'); % vertical lines
-    end
+    hFig = figure( ...
+        'Position', [100, 100, figW, figH], ...
+        'MenuBar', 'none', ...
+        'Name', 'Sudoku Solver', ...
+        'NumberTitle', 'off', ...
+        'Resize', 'off', ...
+        'Color', [0.94 0.94 0.94]);
 
-    % Create input fields for numbers
-    numbers = zeros(gridSize);
-    textHandles = gobjects(gridSize);
-    for row = 1:gridSize
-        for col = 1:gridSize
-            textHandles(row, col) = text(col*cellSize-20, (gridSize-row+1)*cellSize-20, '', 'FontSize', 18, 'HorizontalAlignment', 'center');
+    % --- Initialize shared data ---
+    data.puzzle   = zeros(9, 9);
+    data.isFixed  = false(9, 9);
+    data.editHandles = gobjects(9, 9);
+
+    % Alternating background colors for 3x3 boxes
+    boxColors = {[0.88 0.92 1.00], [0.76 0.82 0.94]};
+
+    % --- Build 9x9 grid of edit boxes ---
+    for row = 1:9
+        for col = 1:9
+            boxRow = ceil(row / 3);
+            boxCol = ceil(col / 3);
+            colorIdx = mod(boxRow + boxCol, 2) + 1;
+
+            x = gridX + (col - 1) * cellW;
+            y = gridY + (9 - row) * cellH;
+
+            data.editHandles(row, col) = uicontrol( ...
+                'Style', 'edit', ...
+                'Parent', hFig, ...
+                'Position', [x, y, cellW, cellH], ...
+                'FontSize', 18, ...
+                'FontWeight', 'bold', ...
+                'BackgroundColor', boxColors{colorIdx}, ...
+                'ForegroundColor', [0 0 0], ...
+                'String', '', ...
+                'HorizontalAlignment', 'center', ...
+                'Callback', @(src, ~) cellCallback(src, row, col));
         end
     end
 
-    % Create buttons
-    uicontrol('Style', 'pushbutton', 'String', 'Solve', 'Position', [50, 20, 100, 40], 'Callback', @(src, event) solveSudoku);
-    uicontrol('Style', 'pushbutton', 'String', 'Clear', 'Position', [250, 20, 100, 40], 'Callback', @(src, event) clearBoard);
+    % --- Status text ---
+    data.statusText = uicontrol( ...
+        'Style', 'text', ...
+        'Parent', hFig, ...
+        'Position', [gridX, 105, figW - gridX*2, 28], ...
+        'String', 'Enter numbers (1-9) then press SOLVE, or use a preset.', ...
+        'FontSize', 10, ...
+        'HorizontalAlignment', 'left', ...
+        'BackgroundColor', [0.94 0.94 0.94]);
 
-    function solveSudoku
-        % Implement the logic to solve Sudoku here
-        % For now, let's just represent it with a message box
-        msgbox('Solve functionality is not implemented yet.');
+    % --- Cell count text ---
+    data.countText = uicontrol( ...
+        'Style', 'text', ...
+        'Parent', hFig, ...
+        'Position', [gridX, 78, figW - gridX*2, 22], ...
+        'String', 'Filled: 0/81  |  Empty: 81/81', ...
+        'FontSize', 9, ...
+        'HorizontalAlignment', 'left', ...
+        'BackgroundColor', [0.94 0.94 0.94]);
+
+    % --- Buttons ---
+    btnY  = 15;
+    btnH  = 55;
+    btnW  = 115;
+    gap   = (figW - gridX*2 - 4*btnW) / 3;
+
+    uicontrol('Style', 'pushbutton', 'Parent', hFig, ...
+        'String', 'SOLVE', ...
+        'Position', [gridX, btnY, btnW, btnH], ...
+        'FontSize', 12, 'FontWeight', 'bold', ...
+        'BackgroundColor', [0.20 0.65 0.25], 'ForegroundColor', 'white', ...
+        'Callback', @solveCallback);
+
+    uicontrol('Style', 'pushbutton', 'Parent', hFig, ...
+        'String', 'CLEAR', ...
+        'Position', [gridX + btnW + gap, btnY, btnW, btnH], ...
+        'FontSize', 12, 'FontWeight', 'bold', ...
+        'BackgroundColor', [0.78 0.25 0.25], 'ForegroundColor', 'white', ...
+        'Callback', @clearCallback);
+
+    uicontrol('Style', 'pushbutton', 'Parent', hFig, ...
+        'String', 'LOAD EXAMPLE', ...
+        'Position', [gridX + (btnW + gap)*2, btnY, btnW, btnH], ...
+        'FontSize', 10, 'FontWeight', 'bold', ...
+        'BackgroundColor', [0.15 0.45 0.78], 'ForegroundColor', 'white', ...
+        'Callback', @loadExampleCallback);
+
+    uicontrol('Style', 'pushbutton', 'Parent', hFig, ...
+        'String', 'GENERATE', ...
+        'Position', [gridX + (btnW + gap)*3, btnY, btnW, btnH], ...
+        'FontSize', 11, 'FontWeight', 'bold', ...
+        'BackgroundColor', [0.55 0.35 0.78], 'ForegroundColor', 'white', ...
+        'Callback', @generateCallback);
+
+    % Save initial data
+    guidata(hFig, data);
+    updateStats();
+
+    % =========================================================
+    %  CALLBACKS
+    % =========================================================
+
+    function cellCallback(src, row, col)
+        d = guidata(hFig);
+        rawStr = strtrim(get(src, 'String'));
+        val = str2double(rawStr);
+        if isempty(rawStr)
+            d.puzzle(row, col) = 0;
+        elseif isnan(val) || val < 1 || val > 9 || floor(val) ~= val
+            % Invalid input: clear the cell
+            set(src, 'String', '');
+            d.puzzle(row, col) = 0;
+        else
+            d.puzzle(row, col) = floor(val);
+        end
+        guidata(hFig, d);
+        updateStats();
     end
 
-    function clearBoard
-        for row = 1:gridSize
-            for col = 1:gridSize
-                numbers(row, col) = 0;
-                set(textHandles(row, col), 'String', '');
+    function solveCallback(~, ~)
+        d = guidata(hFig);
+        set(d.statusText, 'String', 'Solving puzzle, please wait...');
+        drawnow;
+
+        solution = sudoku_solver(d.puzzle);
+
+        if isempty(solution)
+            set(d.statusText, 'String', ...
+                'No solution found. Please check the puzzle for conflicts.');
+        else
+            % Fill in only the cells that were empty (non-fixed)
+            for r = 1:9
+                for c = 1:9
+                    if d.puzzle(r, c) == 0
+                        set(d.editHandles(r, c), ...
+                            'String', num2str(solution(r, c)), ...
+                            'ForegroundColor', [0.10 0.30 0.80], ...
+                            'Enable', 'inactive');
+                    end
+                end
+            end
+            d.puzzle = solution;
+            guidata(hFig, d);
+
+            % Validate and report
+            if sudoku_validator(solution)
+                set(d.statusText, 'String', ...
+                    'Puzzle solved successfully! Solution is valid.');
+            else
+                set(d.statusText, 'String', ...
+                    'Solver finished but validation detected an issue.');
+            end
+            updateStats();
+        end
+    end
+
+    function clearCallback(~, ~)
+        d = guidata(hFig);
+        d.puzzle  = zeros(9, 9);
+        d.isFixed = false(9, 9);
+        boxColors = {[0.88 0.92 1.00], [0.76 0.82 0.94]};
+        for r = 1:9
+            for c = 1:9
+                boxRow = ceil(r / 3);
+                boxCol = ceil(c / 3);
+                colorIdx = mod(boxRow + boxCol, 2) + 1;
+                set(d.editHandles(r, c), ...
+                    'String', '', ...
+                    'ForegroundColor', [0 0 0], ...
+                    'BackgroundColor', boxColors{colorIdx}, ...
+                    'Enable', 'on');
+            end
+        end
+        set(d.statusText, 'String', ...
+            'Board cleared. Enter a new puzzle or use LOAD EXAMPLE / GENERATE.');
+        guidata(hFig, d);
+        updateStats();
+    end
+
+    function loadExampleCallback(~, ~)
+        d = guidata(hFig);
+        example = [ ...
+            5, 3, 0, 0, 7, 0, 0, 0, 0; ...
+            6, 0, 0, 1, 9, 5, 0, 0, 0; ...
+            0, 9, 8, 0, 0, 0, 0, 6, 0; ...
+            8, 0, 0, 0, 6, 0, 0, 0, 3; ...
+            4, 0, 0, 8, 0, 3, 0, 0, 1; ...
+            7, 0, 0, 0, 2, 0, 0, 0, 6; ...
+            0, 6, 0, 0, 0, 0, 2, 8, 0; ...
+            0, 0, 0, 4, 1, 9, 0, 0, 5; ...
+            0, 0, 0, 0, 8, 0, 0, 7, 9];
+        d.puzzle  = example;
+        d.isFixed = (example ~= 0);
+        loadPuzzleIntoGrid(d, [0 0 0]);
+        set(d.statusText, 'String', ...
+            'Example puzzle loaded. Press SOLVE to find the solution.');
+        guidata(hFig, d);
+        updateStats();
+    end
+
+    function generateCallback(~, ~)
+        d = guidata(hFig);
+        set(d.statusText, 'String', 'Generating random puzzle...');
+        drawnow;
+        puzzle    = sudoku_generator();
+        d.puzzle  = puzzle;
+        d.isFixed = (puzzle ~= 0);
+        loadPuzzleIntoGrid(d, [0 0 0]);
+        set(d.statusText, 'String', ...
+            'Random puzzle generated. Press SOLVE to find the solution.');
+        guidata(hFig, d);
+        updateStats();
+    end
+
+    % =========================================================
+    %  HELPERS
+    % =========================================================
+
+    function loadPuzzleIntoGrid(d, givenColor)
+        boxColors = {[0.88 0.92 1.00], [0.76 0.82 0.94]};
+        for r = 1:9
+            for c = 1:9
+                boxRow = ceil(r / 3);
+                boxCol = ceil(c / 3);
+                colorIdx = mod(boxRow + boxCol, 2) + 1;
+                if d.puzzle(r, c) ~= 0
+                    set(d.editHandles(r, c), ...
+                        'String', num2str(d.puzzle(r, c)), ...
+                        'ForegroundColor', givenColor, ...
+                        'BackgroundColor', boxColors{colorIdx}, ...
+                        'Enable', 'inactive');
+                else
+                    set(d.editHandles(r, c), ...
+                        'String', '', ...
+                        'ForegroundColor', [0 0 0], ...
+                        'BackgroundColor', boxColors{colorIdx}, ...
+                        'Enable', 'on');
+                end
             end
         end
     end
 
-    % UI control to allow user to input numbers
-    for row = 1:gridSize
-        for col = 1:gridSize
-            uicontrol('Style', 'edit', 'Position', [col*cellSize-30, (gridSize-row)*cellSize+5, 30, 30], 'Callback', @(src, event) updateNumber(src, row, col));
-        end
+    function updateStats()
+        d = guidata(hFig);
+        filled = sum(d.puzzle(:) ~= 0);
+        empty  = 81 - filled;
+        set(d.countText, 'String', ...
+            sprintf('Filled: %d/81  |  Empty: %d/81', filled, empty));
     end
 
-    function updateNumber(src, row, col)
-        numbers(row, col) = str2double(get(src, 'String'));
-        set(textHandles(row, col), 'String', num2str(numbers(row, col))); 
-    end
 end
