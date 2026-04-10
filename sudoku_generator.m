@@ -34,7 +34,9 @@ function board = fill_board(board)
 end
 
 function puzzle = remove_cells(board, num_to_remove)
-    % Remove 'num_to_remove' cells from a solved board to create a puzzle
+    % Remove 'num_to_remove' cells from a solved board to create a puzzle.
+    % Note: uniqueness of the resulting puzzle is not guaranteed; the puzzle
+    % may have multiple valid solutions.
     puzzle = board;
     positions = randperm(81, num_to_remove);
     for k = 1:length(positions)

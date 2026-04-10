@@ -26,7 +26,7 @@ function test_sudoku_solver()
     result1 = sudoku_solver(sudoku1);
     assert(isequal(result1, expected_solution1), 'Test case 1 failed!');
 
-    % Test case 2: Invalid Sudoku (duplicate in row)
+    % Test case 2: Invalid Sudoku (duplicate in box)
     sudoku2 = [5 3 0 0 7 0 0 0 0;
                6 0 0 1 9 5 0 0 0;
                0 9 8 0 5 0 0 6 0;
